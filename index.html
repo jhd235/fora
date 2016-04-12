@@ -1,0 +1,145 @@
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+
+<script>
+	
+	var socket = io.connect();
+	
+	
+	// on connection to server, ask for user's name with an anonymous callback
+	socket.on('connect', function(){
+		// call the server-side function 'adduser' and send one parameter (value of prompt)
+		//socket.emit('login', prompt("What's your login?"), guest);
+		var guest = 'guest';
+		socket.emit('login', Math.floor((Math.random() * 100) + 1), guest);
+		//alert(socket.username);
+		
+	});	
+	socket.on('showRoomMgm', function(){
+		var hlAddRoom = document.createElement('a');
+		var artext = document.createTextNode("Add Room  | ");
+		hlAddRoom.appendChild(artext);
+		hlAddRoom.title = "Add room";
+		hlAddRoom.href = "#";
+		hlAddRoom.id = "hlar";		
+		//document.body.appendChild(hlAddRoom);
+		document.getElementById("left").appendChild(hlAddRoom);
+
+		$('#hlar').click(function(){
+		addRoom();
+	})	
+
+		var br = document.createElement('br');
+		document.body.appendChild(br);
+		var hlRmRoom = document.createElement('a');
+		var rrtext = document.createTextNode(" |  Remove Room");
+		hlRmRoom.appendChild(rrtext);
+		hlRmRoom.title = "Remove room";
+		hlRmRoom.href = "#";
+		hlRmRoom.id = "hlrr";
+		document.getElementById("left").appendChild(hlRmRoom);
+
+		$('#hlrr').click(function(){
+		rmRoom();
+	})	
+	
+		var br = document.createElement('br');
+		document.body.appendChild(br);
+		var hlInvite = document.createElement('a');
+		var invitetext = document.createTextNode(" |  Invite to Room");
+		hlInvite.appendChild(invitetext);
+		hlInvite.title = "Invite to room";
+		hlInvite.href = "#";
+		hlInvite.id = "hlInvite";
+		document.getElementById("left").appendChild(hlInvite);
+
+		$('#hlInvite').click(function(){
+		Invite();
+	})	
+	
+	});
+	socket.on('regForm', function(){
+		document.body.innerHTML = '';
+	});
+	socket.on('askPasswd', function (username) {
+	//alert('askPasswd');
+				socket.emit('passwd', username, prompt("What's your passwd?"));
+				//clilogin = login;
+				//alert(clilogin);
+	});
+
+	// listener, whenever the server emits 'updatechat', this updates the chat body
+	socket.on('updatechat', function (username, data) {
+		$('#conversation').append('<b>'+username + ':</b> ' + data + '<br>');
+	});
+
+	// listener, whenever the server emits 'updaterooms', this updates the room the client is in
+	socket.on('updaterooms', function(rooms, current_room) {		
+		var divrooms = document.createElement('div');		
+		divrooms.style = 'border:thin';		
+		document.getElementById("left").appendChild(divrooms);
+		divrooms.id='rooms';
+		$('#rooms').empty();
+		$.each(rooms, function(key, value) {
+			if(value == current_room){
+				$('#rooms').append('<div>' + value + '</div>');
+			}
+			else {
+				$('#rooms').append('<div><a href="#" onclick="switchRoom(\''+value+'\')">' + value + '</a></div>');
+			}
+		});
+		var divid = document.getElementById('rooms');
+		//divid.innerHTML = divid.innerHTML + 'Rooms list';
+	});
+
+	function switchRoom(room){
+		socket.emit('switchRoom', room);
+	}
+	function addRoom(){
+		//socket.emit('addRoom', room);
+		socket.emit('addRoom', prompt("Add new room"));
+	}
+	function rmRoom(){
+		//socket.emit('addRoom', room);
+		socket.emit('rmRoom', prompt("remove room"));
+	}
+	
+	function Invite(){
+		socket.emit('invite', prompt("Invite to which one room?"), prompt("Invite who?"));
+	}
+	
+	function login(){
+		var guest = 'notguest';
+		socket.emit('login', prompt("What's your login?"), guest);
+	}
+	
+	
+	// on load of page
+	$(function(){
+		// when the client clicks SEND
+		$('#datasend').click( function() {
+			var message = $('#data').val();
+			$('#data').val('');
+			// tell server to execute 'sendchat' and send along one parameter
+			socket.emit('sendchat', message);
+		});
+	
+		// when the client hits ENTER on their keyboard
+		$('#data').keypress(function(e) {
+			if(e.which == 13) {
+				$(this).blur();
+				$('#datasend').focus().click();
+			}
+		});
+	});
+
+</script>
+<div id = "login" align = "center">
+	<a href = "#" onclick = login();>Login/change user</a>
+</div>
+<div id = "left" align = "left"></div>
+<div id = "send" align = "right">
+	<div id="conversation"></div>
+	<input id="data"/>
+	<input type="button" id="datasend" value="send" />
+</div>
